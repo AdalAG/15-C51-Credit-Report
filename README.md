@@ -37,14 +37,11 @@ For each top feature (and key pairs):
 | Conditional distributions | KDE (continuous) / bar (categorical) by outcome | Model-free sanity check; should align with importance |
 | Direction & monotonicity | PDP + SHAP main effect plots | Sign and shape of each feature's effect |
 | Heterogeneity | ICE plots | Whether the effect is uniform or varies across individuals |
-| Interactions | 2-way PDP, SHAP interaction values, SHAP dependence colored by second feature | Which feature pairs jointly influence decisions |
-| Borderline cases | SHAP waterfall plots (P ≈ 0.45–0.55) | Model logic at the margin, where decisions are consequential |
-| Sign sanity check | Regularized logistic regression (L1/L2) | Agreement with RF → pattern is in the data; disagreement → investigate |
-| Direction stability | SHAP sign per fold | A feature whose direction flips across folds is unreliable |
+| Interactions | SHAP interaction values, SHAP dependence colored by second feature | Which feature pairs jointly influence decisions |
+| Direction stability | SHAP sign per fold | A feature whose direction frequently flips across folds is unreliable |
 
 ## Key Rationale
 - **No test set**: justified because the goal is understanding the data-generating process, not estimating generalization error
 - **Stability over raw performance**: a model that generalizes consistently across folds is more interpretable than one with higher mean AUC but high variance
 - **Permutation/SHAP over MDI**: avoids cardinality bias in importance ranking
-- **Logistic regression as cross-check**: if RF and LR agree on top features and directions, the finding is more credible; disagreement may indicate nonlinearity or collinearity artifacts
-- **ICE over PDP alone**: PDP averages can mask heterogeneous effects; ICE reveals whether a feature's effect is consistent across individuals
+
