@@ -1,47 +1,164 @@
 \documentclass[11pt]{article}
 
-% ── Packages ──────────────────────────────────────────────────────────────────
-\usepackage[margin=1in]{geometry}
-\usepackage{booktabs}
-\usepackage{graphicx}
-\usepackage{hyperref}
-\usepackage[numbers]{natbib}
-\usepackage{setspace}
-\usepackage{parskip}
-\usepackage{caption}
-\usepackage{array}
-\usepackage{tabularx}
-\usepackage{float}
+% ── Core layout ───────────────────────────────────────────────────────────────
+\usepackage[top=1in, bottom=1in, left=1.15in, right=1.15in]{geometry}
 \usepackage{microtype}
 \usepackage{lmodern}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 
+% ── Fonts ─────────────────────────────────────────────────────────────────────
+\usepackage{palatino}          % Body font: Palatino (reads like a report, not a paper)
+\usepackage{helvet}            % Section font: Helvetica
+
+% ── Color ─────────────────────────────────────────────────────────────────────
+\usepackage[dvipsnames,svgnames,table]{xcolor}
+\definecolor{NavyReport}{RGB}{15,  40,  80}   % Deep navy  – headers
+\definecolor{AccentBlue}{RGB}{0,   90, 160}   % Mid blue   – rules / highlights
+\definecolor{LightGray} {RGB}{245,245,245}    % Near-white – table row shading
+\definecolor{MidGray}   {RGB}{180,180,180}    % Rule gray
+
+% ── Section styling ───────────────────────────────────────────────────────────
+\usepackage{titlesec}
+% Section: navy, sans-serif, left rule accent
+\titleformat{\section}
+  {\color{NavyReport}\fontfamily{phv}\fontseries{b}\fontsize{13}{15}\selectfont}
+  {}{0em}
+  {\colorbox{NavyReport}{\parbox{4pt}{\strut}}\hspace{6pt}}
+\titlespacing*{\section}{0pt}{18pt}{6pt}
+
+% Subsection: accent blue, sans-serif
+\titleformat{\subsection}
+  {\color{AccentBlue}\fontfamily{phv}\fontseries{b}\fontsize{11}{13}\selectfont}
+  {}{0em}{}
+\titlespacing*{\subsection}{0pt}{12pt}{4pt}
+
+% Subsubsection: small-caps, dark
+\titleformat{\subsubsection}[runin]
+  {\fontfamily{phv}\fontseries{b}\fontsize{10}{12}\selectfont\color{NavyReport}}
+  {}{0em}{}
+\titlespacing*{\subsubsection}{0pt}{8pt}{6pt}
+
+% ── Header / Footer ───────────────────────────────────────────────────────────
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\fontfamily{phv}\fontsize{8}{10}\selectfont\color{MidGray}%
+  Credit Approval Rule Analysis}
+\fancyhead[R]{\fontfamily{phv}\fontsize{8}{10}\selectfont\color{MidGray}%
+  MIT Sloan $\cdot$ 15.C51 $\cdot$ Spring 2026}
+\fancyfoot[C]{\fontfamily{phv}\fontsize{8}{10}\selectfont\color{MidGray}\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\headrule}{\color{MidGray}\hrule width\headwidth height\headrulewidth}
+
+% ── Tables ────────────────────────────────────────────────────────────────────
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{float}
+\usepackage{caption}
+\captionsetup{
+  font={small, sf},
+  labelfont={bf, color=NavyReport},
+  labelsep=period,
+  skip=4pt
+}
+% Alternating row shading helper
+\usepackage{colortbl}
+\newcommand{\rowhead}{\rowcolor{NavyReport!15}}
+\newcommand{\rowalt}{\rowcolor{LightGray}}
+
+% ── Figures ───────────────────────────────────────────────────────────────────
+\usepackage{graphicx}
+
+% ── Lists ─────────────────────────────────────────────────────────────────────
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=1.4em, itemsep=1pt, topsep=3pt}
+\setlist[enumerate]{leftmargin=1.4em, itemsep=1pt, topsep=3pt}
+
+% ── Paragraph spacing ─────────────────────────────────────────────────────────
+\usepackage{parskip}
+\setlength{\parskip}{5pt}
+\setlength{\parindent}{0pt}
+
+% ── Hyperlinks ────────────────────────────────────────────────────────────────
+\usepackage[hidelinks]{hyperref}
 \hypersetup{
-    colorlinks=true,
-    linkcolor=black,
-    citecolor=black,
-    urlcolor=blue
+  colorlinks=true,
+  linkcolor=AccentBlue,
+  citecolor=AccentBlue,
+  urlcolor=AccentBlue
 }
 
-% ── Title block ───────────────────────────────────────────────────────────────
-\title{\textbf{Credit Approval Rule Analysis}\\[0.4em]
-\large UCI Credit Approval Dataset $\cdot$ Explainability-First ML Pipeline}
-\author{
-  15.C51 $\cdot$ Modeling with Machine Learning: Financial Technology\\
-  Prof.\ Andrew W.\ Lo \& Prof.\ Paul F.\ Mende\\
-  MIT Sloan School of Management
-}
-\date{Spring 2026}
+% ── Bibliography ──────────────────────────────────────────────────────────────
+\usepackage[numbers]{natbib}
 
-% ── Document ──────────────────────────────────────────────────────────────────
+% ── Misc ──────────────────────────────────────────────────────────────────────
+\usepackage{setspace}
+\usepackage{amsmath}
+
+% ══════════════════════════════════════════════════════════════════════════════
+%  COVER PAGE
+% ══════════════════════════════════════════════════════════════════════════════
+\newcommand{\coverpage}{%
+  \thispagestyle{empty}
+  % Top navy bar
+  {\color{NavyReport}\rule{\linewidth}{6pt}}\\[2pt]
+  {\color{AccentBlue}\rule{\linewidth}{1.5pt}}
+  \vspace{2.4cm}
+
+  % Report type label
+  {\fontfamily{phv}\fontseries{b}\fontsize{9}{11}\selectfont
+   \color{AccentBlue}\MakeUppercase{Analytical Report}}
+
+  \vspace{0.5cm}
+
+  % Title
+  {\fontfamily{phv}\fontseries{b}\fontsize{26}{30}\selectfont
+   \color{NavyReport} Credit Approval Rule Analysis}\\[0.5em]
+  {\fontfamily{phv}\fontseries{m}\fontsize{14}{17}\selectfont
+   \color{AccentBlue} Explainability-First Machine Learning Pipeline}
+
+  \vspace{0.6cm}
+  {\color{MidGray}\rule{\linewidth}{0.6pt}}
+  \vspace{0.4cm}
+
+  % Subtitle / dataset
+  {\fontfamily{phv}\fontsize{10}{12}\selectfont
+   \color{NavyReport}
+   UCI Credit Approval Dataset $\cdot$ Random Forest $\cdot$ SHAP Explainability}
+
+  \vfill
+
+  % Bottom metadata block
+  {\color{MidGray}\rule{\linewidth}{0.6pt}}\\[8pt]
+  \begin{minipage}[t]{0.55\linewidth}
+    {\fontfamily{phv}\fontseries{b}\fontsize{9}{11}\selectfont\color{NavyReport}
+     Submitted to}\\[3pt]
+    {\fontfamily{phv}\fontsize{9}{12}\selectfont\color{NavyReport}
+     Prof.\ Andrew W.\ Lo \&\ Prof.\ Paul F.\ Mende\\[1pt]
+     15.C51 $\cdot$ Modeling with Machine Learning: Financial Technology\\[1pt]
+     MIT Sloan School of Management}
+  \end{minipage}%
+  \hfill
+  \begin{minipage}[t]{0.35\linewidth}
+    \raggedleft
+    {\fontfamily{phv}\fontseries{b}\fontsize{9}{11}\selectfont\color{NavyReport}
+     Date}\\[3pt]
+    {\fontfamily{phv}\fontsize{9}{12}\selectfont\color{NavyReport} Spring 2026}
+  \end{minipage}
+  \\[6pt]
+  {\color{NavyReport}\rule{\linewidth}{3pt}}
+  \newpage
+}
+
+% ══════════════════════════════════════════════════════════════════════════════
 \begin{document}
+\coverpage
 
-\maketitle
-\thispagestyle{empty}
-
-\newpage
-\tableofcontents
+% TOC
+{\hypersetup{linkcolor=NavyReport}
+\tableofcontents}
 \newpage
 
 % ──────────────────────────────────────────────────────────────────────────────
@@ -90,17 +207,28 @@ A9 is the dominant predictor in this dataset by a substantial margin. Its mean a
 \centering
 \caption{Feature importance summary.}
 \label{tab:importance}
+\setlength{\arrayrulewidth}{0.4pt}
 \begin{tabular}{lccccl}
 \toprule
-Feature & SHAP Rank & Mean $|$SHAP$|$ & Perm.\ Importance & Corr.\ with A9 & Fold Stability \\
+\rowhead
+\color{white}\textbf{Feature} &
+\color{white}\textbf{SHAP Rank} &
+\color{white}\textbf{Mean $|$SHAP$|$} &
+\color{white}\textbf{Perm.\ Importance} &
+\color{white}\textbf{Corr.\ with A9} &
+\color{white}\textbf{Fold Stability} \\
 \midrule
 A9  & 1 & 0.2034 & High     & ---  & 8/10 \\
+\rowalt
 A11 & 2 & 0.0682 & Moderate & 0.38 & 2/10$^\dagger$ \\
 A8  & 3 & 0.0559 & Moderate & 0.34 & 5/10 \\
+\rowalt
 A15 & 4 & 0.0454 & High     & 0.06 & 3/10$^\dagger$ \\
 A10 & 5 & 0.0419 & Moderate & 0.43 & 8/10 \\
+\rowalt
 A14 & 6 & 0.0255 & Moderate & 0.08 & 4/10 \\
 A6  & 7 & 0.0220 & Low      & ---  & 4/10 \\
+\rowalt
 A3  & 8 & 0.0199 & Low      & ---  & 3/10 \\
 \bottomrule
 \multicolumn{6}{l}{\footnotesize $^\dagger$ Fold stability reflects skewed distribution artifact; beeswarm on full model is the correct directional diagnostic.}\\
@@ -193,11 +321,17 @@ Regulatory constraints on algorithmic credit scoring extend beyond the United St
 \centering
 \caption{Regulatory exposure by jurisdiction.}
 \label{tab:regulatory}
+\setlength{\arrayrulewidth}{0.4pt}
 \begin{tabularx}{\textwidth}{llXl}
 \toprule
-Jurisdiction & Framework & Key Requirement & Status \\
+\rowhead
+\color{white}\textbf{Jurisdiction} &
+\color{white}\textbf{Framework} &
+\color{white}\textbf{Key Requirement} &
+\color{white}\textbf{Status} \\
 \midrule
 United States & ECOA / Regulation B & Specific adverse action reasons required & Non-compliant \\
+\rowalt
 United States & FCRA & Accurate disclosure of factors affecting credit decisions & Non-compliant \\
 European Union & EU AI Act, Annex III \S5(b) & Risk management, technical documentation, human oversight, EU database registration (from Aug 2026) & Non-compliant \\
 \bottomrule
@@ -219,18 +353,24 @@ This analysis uses the UCI Credit Approval dataset, a publicly available benchma
 \centering
 \caption{Dataset summary.}
 \label{tab:dataset}
+\setlength{\arrayrulewidth}{0.4pt}
 \begin{tabular}{ll}
 \toprule
-Property & Value \\
+\rowhead
+\color{white}\textbf{Property} & \color{white}\textbf{Value} \\
 \midrule
-Total observations (raw)     & 690 \\
+Total observations (raw)       & 690 \\
+\rowalt
 Observations removed (missing) & 37 \\
-Analytical sample            & 653 \\
-Features                     & 15 (A1--A15) \\
-Categorical features         & 9 (A1, A4, A5, A6, A7, A9, A10, A12, A13) \\
-Continuous features          & 6 (A2, A3, A8, A11, A14, A15) \\
-Target variable              & A16: + (approved) / $-$ (denied) \\
-Class balance (approved)     & 45.3\% \\
+Analytical sample              & 653 \\
+\rowalt
+Features                       & 15 (A1--A15) \\
+Categorical features           & 9 (A1, A4, A5, A6, A7, A9, A10, A12, A13) \\
+\rowalt
+Continuous features            & 6 (A2, A3, A8, A11, A14, A15) \\
+Target variable                & A16: + (approved) / $-$ (denied) \\
+\rowalt
+Class balance (approved)       & 45.3\% \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -253,20 +393,27 @@ Hyperparameter selection uses \texttt{RandomizedSearchCV} over 60 candidate conf
 \centering
 \caption{Model configuration and performance.}
 \label{tab:model}
+\setlength{\arrayrulewidth}{0.4pt}
 \begin{tabular}{ll}
 \toprule
-Parameter / Metric & Value \\
+\rowhead
+\color{white}\textbf{Parameter / Metric} & \color{white}\textbf{Value} \\
 \midrule
-Model class              & Random Forest \\
-Selection criterion      & Min std(AUC) among candidates with mean AUC $\geq$ 0.80 \\
-Candidates evaluated     & 60 \\
-\texttt{n\_estimators}   & 100 \\
-\texttt{max\_depth}      & 20 \\
+Model class                  & Random Forest \\
+\rowalt
+Selection criterion          & Min std(AUC) among candidates with mean AUC $\geq$ 0.80 \\
+Candidates evaluated         & 60 \\
+\rowalt
+\texttt{n\_estimators}       & 100 \\
+\texttt{max\_depth}          & 20 \\
+\rowalt
 \texttt{min\_samples\_leaf}  & 4 \\
 \texttt{min\_samples\_split} & 10 \\
-\texttt{max\_features}   & \texttt{sqrt} \\
-Mean CV AUC (10-fold)    & 0.9366 \\
-Std CV AUC (10-fold)     & 0.0282 \\
+\rowalt
+\texttt{max\_features}       & \texttt{sqrt} \\
+Mean CV AUC (10-fold)        & 0.9366 \\
+\rowalt
+Std CV AUC (10-fold)         & 0.0282 \\
 \bottomrule
 \end{tabular}
 \end{table}
