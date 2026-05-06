@@ -196,151 +196,6 @@ This report does not aim to build a production-ready credit scoring system. The 
 The question of how AI interacts with credit ecosystems is not primarily a question about model accuracy. It is a question about which features carry predictive signal, whether that signal is stable across data partitions, whether it is consistent with the principles of fair lending, and whether the decision process it encodes can be explained to the applicants it affects and the regulators who oversee it. This analysis addresses each of these questions in turn, within the limits imposed by the data.
 
 % ──────────────────────────────────────────────────────────────────────────────
-\section{Key Findings}
-% ──────────────────────────────────────────────────────────────────────────────
-
-\subsection{Feature Importance and the Role of A9}
-
-A9 is the dominant predictor in this dataset by a substantial margin. Its mean absolute SHAP value across the full analytical sample is 0.2034. The next highest feature, A11, registers 0.0682. No other feature exceeds 0.07. Table~\ref{tab:importance} provides the full feature importance summary across all metrics. Because the model was selected for stability rather than peak accuracy, as described in Section~\ref{sec:model}, these importance rankings reflect consistent signal rather than artifacts of a single favorable data split.
-
-\begin{table}[H]
-\centering
-\caption{Feature importance summary.}
-\label{tab:importance}
-\setlength{\arrayrulewidth}{0.4pt}
-\begin{tabular}{lccccl}
-\toprule
-\rowhead
-\color{white}\textbf{Feature} &
-\color{white}\textbf{SHAP Rank} &
-\color{white}\textbf{Mean $|$SHAP$|$} &
-\color{white}\textbf{Perm.\ Importance} &
-\color{white}\textbf{Corr.\ with A9} &
-\color{white}\textbf{Fold Stability} \\
-\midrule
-A9  & 1 & 0.2034 & High     & ---  & 8/10 \\
-\rowalt
-A11 & 2 & 0.0682 & Moderate & 0.38 & 2/10$^\dagger$ \\
-A8  & 3 & 0.0559 & Moderate & 0.34 & 5/10 \\
-\rowalt
-A15 & 4 & 0.0454 & High     & 0.06 & 3/10$^\dagger$ \\
-A10 & 5 & 0.0419 & Moderate & 0.43 & 8/10 \\
-\rowalt
-A14 & 6 & 0.0255 & Moderate & 0.08 & 4/10 \\
-A6  & 7 & 0.0220 & Low      & ---  & 4/10 \\
-\rowalt
-A3  & 8 & 0.0199 & Low      & ---  & 3/10 \\
-\bottomrule
-\multicolumn{6}{l}{\footnotesize $^\dagger$ Fold stability reflects skewed distribution artifact; beeswarm on full model is the correct directional diagnostic.}\\
-\multicolumn{6}{l}{\footnotesize See Sections~\ref{sec:cluster} and~\ref{sec:limitations}.}
-\end{tabular}
-\end{table}
-
-The structure of A9's effect is binary rather than continuous. The SHAP beeswarm plot (Figure~\ref{fig:beeswarm}) shows two distinct clusters. Low values of A9 produce large negative SHAP contributions, pushing predicted approval probability downward. High values produce large positive contributions, pushing it upward. There is no gradual middle range. Applicants with low A9 values face a strong prior against approval that the remaining features cannot easily overcome.
-
-This directional effect is stable across data partitions. A9 produces a positive fold-mean SHAP value in 8 of 10 cross-validation folds (Figure~\ref{fig:signmatrix}). The two dissenting folds reflect sampling variation. The bimodal structure visible in the beeswarm is consistent across all folds individually.
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.80\linewidth]{figures/fig1_beeswarm.png}
-\caption{SHAP beeswarm plot for the final model trained on all 653 observations. Features are sorted by mean $|$SHAP$|$ (descending). Color encodes raw feature value (red~=~high, blue~=~low). Horizontal position encodes effect on approval probability.}
-\label{fig:beeswarm}
-\end{figure}
-
-\subsection{Correlated Features: A10, A11, and A8}
-\label{sec:cluster}
-
-A10, A11, and A8 occupy the top tier of SHAP magnitude after A9 and rank second through fourth in permutation importance (Figure~\ref{fig:permutation}). All three are positively correlated with A9: Pearson correlations of 0.43, 0.38, and 0.34 respectively (Figure~\ref{fig:correlation}). The distinction between permutation importance and SHAP importance is relevant here. High permutation importance indicates independent predictive contribution when all other features are present. High SHAP magnitude with relatively lower permutation importance indicates that a feature's contribution is partially shared with correlated features. A10, A11, and A8 exhibit the latter pattern. Their SHAP contributions are real, but a substantial portion of that signal overlaps with A9.
-
-A11 and A8 share a similar response shape. Both show a rapid positive increase at low feature values that saturates quickly, consistent with a log-shaped threshold effect (Figure~\ref{fig:pdpice}, PDP panel). The ICE curves fan widely for both features, indicating that the marginal effect of each varies substantially across individual applicants. A10 follows a binary structure closer to A9, producing either a clearly positive or clearly negative SHAP contribution with little in between.
-
-The fold-level sign stability matrix (Figure~\ref{fig:signmatrix}) shows A10 at 8/10 positive folds, consistent with its beeswarm profile. A11 registers only 2/10 positive folds. For features with highly left-skewed distributions, the fold-level mean SHAP is dominated by the large mass of near-zero observations, pulling the mean negative even when the feature produces positive contributions for elevated-value applicants. The beeswarm on the full model is the more reliable diagnostic for A11's directional effect. This limitation is discussed in Section~\ref{sec:skew}.
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.85\linewidth]{figures/fig2_permutation.png}
-\caption{Permutation feature importance~--- mean $\pm$ std across 10 cross-validation folds. Error bars represent one standard deviation.}
-\label{fig:permutation}
-\end{figure}
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.65\linewidth]{figures/fig3_correlation.png}
-\caption{Pearson correlation heatmap among the top 8 features ranked by mean $|$SHAP$|$. Warm red~=~positive correlation; cool blue~=~negative.}
-\label{fig:correlation}
-\end{figure}
-
-\subsection{Orthogonal Signals: A15 and A14}
-
-A15 and A14 are not part of the A9 correlated cluster. Their correlations with A9 are 0.06 and 0.08 respectively (Figure~\ref{fig:correlation}). They carry information that is independent of the primary signal and its associated features.
-
-A15 produces near-zero SHAP values for most applicants. For a small subset at the extreme upper tail of the A15 distribution, it generates a meaningfully positive contribution to predicted approval probability (Figures~\ref{fig:beeswarm} and~\ref{fig:pdpice}). Below that threshold, A15 is effectively inert. The fold-level sign matrix places A15 at 3/10 positive folds, again reflecting the skew limitation described in Section~\ref{sec:cluster}. The beeswarm and PDP both confirm the tail-positive structure independently.
-
-A14 is the weakest feature among the top signals. Its PDP is nearly flat across its full range (Figure~\ref{fig:pdpice}), and its ICE curves cross heavily, indicating that the marginal effect reverses direction across individuals. The fold-level sign matrix places A14 at 4/10 positive folds. No stable directional interpretation for A14 is consistent across the diagnostics used in this analysis.
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=\linewidth]{figures/fig4_pdp_ice.png}
-\caption{PDP~+~ICE plots for A11, A8, A15, and A14. The dashed line shows the population-average partial dependence. Thin lines show individual conditional expectations for a random subsample of 200 observations.}
-\label{fig:pdpice}
-\end{figure}
-
-\subsection{Low-Importance and Direction-Unstable Features}
-
-The remaining features~--- A3, A5, A6, A2, A1, A4, A7, A12, and A13~--- contribute near-zero SHAP values in the full model and show no consistent directional pattern in the sign stability matrix (Figure~\ref{fig:signmatrix}). A5 and A8 are the most directionally unstable, each splitting evenly across positive and negative fold means. A3 and A6 show a weak negative lean at 3/10 and 4/10 positive folds respectively, but their SHAP magnitudes are too small to support reliable conclusions.
-
-A1 and A7 warrant separate note. Based on the structure of the UCI Credit Approval dataset and prior literature on credit application features, A1 is commonly interpreted as a binary sex or gender indicator, and A7 as an indicator related to ethnicity or national origin. Both are protected characteristics under major fair lending frameworks. Both rank at the bottom of the SHAP importance ranking and contribute effectively zero to model predictions. This is addressed in Section~\ref{sec:fairlending}.
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=\linewidth]{figures/fig5_sign_matrix.png}
-\caption{SHAP direction stability matrix. Each cell shows the sign of the mean SHAP value for that feature in that fold: `+' (green) pushes toward approval; `-' (red) pushes toward denial.}
-\label{fig:signmatrix}
-\end{figure}
-
-\subsection{Fair Lending Analysis}
-\label{sec:fairlending}
-
-\subsubsection*{Disparate treatment}
-
-Disparate treatment occurs when a model uses protected characteristics as direct inputs to reach differential outcomes. Under the Equal Credit Opportunity Act (ECOA) and Regulation~B, creditors are prohibited from discriminating on the basis of race, color, religion, national origin, sex, marital status, or age \citep{cfpb2022}. In this model, A1 and A7 are present as features but contribute near-zero SHAP values. The model does not materially rely on these characteristics to reach approval decisions. This is a positive finding from a disparate treatment standpoint. It does not, however, exhaust the fair lending analysis.
-
-\subsubsection*{Disparate impact}
-
-Disparate impact concerns arise when a facially neutral feature produces outcomes that disproportionately disadvantage a protected class. A15's tail effect is the primary candidate for this concern. The feature is effectively inert for most applicants and provides a meaningful approval boost only for those at the extreme upper end of its distribution. If A15 proxies wealth, income, or accumulated assets, the structural effect is to selectively reward applicants with exceptional financial resources. In most credit markets, access to exceptional financial resources correlates with race, national origin, and other protected characteristics due to historical and structural factors. This does not make A15 an impermissible feature, but any deployment of a model with this structure would require a formal disparate impact analysis and, where adverse impact is found, a documented search for less discriminatory alternatives \citep{dobbie2024, asurity2024}.
-
-\subsubsection*{Compliance barrier under feature anonymization}
-
-A lending institution cannot deploy a model built on anonymous features in any major jurisdiction. Under ECOA and Regulation~B, creditors must provide applicants with specific reasons for adverse action decisions. \citet{cfpb2022} explicitly addresses this requirement in the context of complex machine learning models, affirming that the use of algorithmic models does not exempt creditors from the obligation to provide specific and accurate adverse action notices. A model whose features cannot be identified or described in human-readable terms cannot satisfy this requirement.
-
-\subsubsection*{Regulatory exposure across jurisdictions}
-
-Regulatory constraints on algorithmic credit scoring extend beyond the United States. Table~\ref{tab:regulatory} summarizes the compliance status of a model of this type across the three most relevant regulatory frameworks.
-
-\begin{table}[H]
-\centering
-\caption{Regulatory exposure by jurisdiction.}
-\label{tab:regulatory}
-\setlength{\arrayrulewidth}{0.4pt}
-\begin{tabularx}{\textwidth}{llXl}
-\toprule
-\rowhead
-\color{white}\textbf{Jurisdiction} &
-\color{white}\textbf{Framework} &
-\color{white}\textbf{Key Requirement} &
-\color{white}\textbf{Status} \\
-\midrule
-United States & ECOA / Regulation B & Specific adverse action reasons required & Non-compliant \\
-\rowalt
-United States & FCRA & Accurate disclosure of factors affecting credit decisions & Non-compliant \\
-European Union & EU AI Act, Annex III \S5(b) & Risk management, technical documentation, human oversight, EU database registration (from Aug 2026) & Non-compliant \\
-\bottomrule
-\end{tabularx}
-\end{table}
-
-This points to a broader structural problem in the deployment of algorithmic credit systems. As these systems become more capable and more widely adopted, the gap between what a model can predict and what a regulator can audit is widening. \citet{kozodoi2022} provide a framework for formally testing and optimizing fairness in credit scoring models, demonstrating that accuracy and fairness are not necessarily in tension and that the tradeoff between them can be explicitly managed. \citet{dumitrescu2022} benchmark twelve bias mitigation methods across multiple credit datasets, finding substantial variation in outcomes across methods and datasets. Both bodies of work reach the same conclusion: fair lending compliance in algorithmic systems requires proactive formal analysis. Without feature identity, that analysis cannot begin.
-
-% ──────────────────────────────────────────────────────────────────────────────
 \section{Data and Methodology}
 \label{sec:model}
 % ──────────────────────────────────────────────────────────────────────────────
@@ -433,6 +288,160 @@ Four complementary methods are applied. Each answers a distinct analytical quest
 \textbf{SHAP dependence plots} show, for each feature of interest, the relationship between raw feature value and SHAP contribution, colored by A9. This reveals nonlinear response shapes and potential interaction effects between features.
 
 \textbf{Partial dependence plots and individual conditional expectation curves (PDP and ICE)} are computed on the final model. The PDP shows the average marginal effect of each continuous feature on predicted approval probability. ICE curves show the same relationship at the individual level, exposing heterogeneity that the average obscures \citep{goldstein2015, molnar2022}.
+
+
+% ──────────────────────────────────────────────────────────────────────────────
+\section{Key Findings}
+% ──────────────────────────────────────────────────────────────────────────────
+
+\subsection{Feature Importance and the Role of A9}
+
+A9 is the dominant predictor in this dataset by a substantial margin. Its mean absolute SHAP value across the full analytical sample is 0.2034. The next highest feature, A11, registers 0.0682. No other feature exceeds 0.07. Table~\ref{tab:importance} provides the full feature importance summary across all metrics. Because the model was selected for stability rather than peak accuracy, as described in Section~\ref{sec:model}, these importance rankings reflect consistent signal rather than artifacts of a single favorable data split.
+
+\begin{table}[H]
+\centering
+\caption{Feature importance summary.}
+\label{tab:importance}
+\setlength{\arrayrulewidth}{0.4pt}
+\begin{tabular}{lccccl}
+\toprule
+\rowhead
+\color{white}\textbf{Feature} &
+\color{white}\textbf{SHAP Rank} &
+\color{white}\textbf{Mean $|$SHAP$|$} &
+\color{white}\textbf{Perm.\ Importance} &
+\color{white}\textbf{Corr.\ with A9} &
+\color{white}\textbf{Fold Stability} \\
+\midrule
+A9  & 1 & 0.2034 & High     & ---  & 8/10 \\
+\rowalt
+A11 & 2 & 0.0682 & Moderate & 0.38 & 2/10$^\dagger$ \\
+A8  & 3 & 0.0559 & Moderate & 0.34 & 5/10 \\
+\rowalt
+A15 & 4 & 0.0454 & High     & 0.06 & 3/10$^\dagger$ \\
+A10 & 5 & 0.0419 & Moderate & 0.43 & 8/10 \\
+\rowalt
+A14 & 6 & 0.0255 & Moderate & 0.08 & 4/10 \\
+A6  & 7 & 0.0220 & Low      & ---  & 4/10 \\
+\rowalt
+A3  & 8 & 0.0199 & Low      & ---  & 3/10 \\
+\bottomrule
+\multicolumn{6}{l}{\footnotesize $^\dagger$ Fold stability reflects skewed distribution artifact; beeswarm on full model is the correct directional diagnostic.}\\
+\multicolumn{6}{l}{\footnotesize See Sections~\ref{sec:cluster} and~\ref{sec:limitations}.}
+\end{tabular}
+\end{table}
+
+The structure of A9's effect is binary rather than continuous. The SHAP beeswarm plot (Figure~\ref{fig:beeswarm}) shows two distinct clusters. Low values of A9 produce large negative SHAP contributions, pushing predicted approval probability downward. High values produce large positive contributions, pushing it upward. There is no gradual middle range. Applicants with low A9 values face a strong prior against approval that the remaining features cannot easily overcome.
+
+This directional effect is stable across data partitions. A9 produces a positive fold-mean SHAP value in 8 of 10 cross-validation folds (Figure~\ref{fig:signmatrix}). The two dissenting folds reflect sampling variation. The bimodal structure visible in the beeswarm is consistent across all folds individually.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.80\linewidth]{figures/fig1_beeswarm.png}
+\caption{SHAP beeswarm plot for the final model trained on all 653 observations. Features are sorted by mean $|$SHAP$|$ (descending). Color encodes raw feature value (red~=~high, blue~=~low). Horizontal position encodes effect on approval probability.}
+\label{fig:beeswarm}
+\end{figure}
+
+\subsection{Correlated Features: A10, A11, and A8}
+\label{sec:cluster}
+
+A10, A11, and A8 occupy the top tier of SHAP magnitude after A9 and rank second through fourth in permutation importance (Figure~\ref{fig:permutation}). All three are positively correlated with A9: Pearson correlations of 0.43, 0.38, and 0.34 respectively (Figure~\ref{fig:correlation}). The distinction between permutation importance and SHAP importance is relevant here. High permutation importance indicates independent predictive contribution when all other features are present. High SHAP magnitude with relatively lower permutation importance indicates that a feature's contribution is partially shared with correlated features. A10, A11, and A8 exhibit the latter pattern. Their SHAP contributions are real, but a substantial portion of that signal overlaps with A9.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\linewidth]{figures/fig2_permutation.png}
+\caption{Permutation feature importance~--- mean $\pm$ std across 10 cross-validation folds. Error bars represent one standard deviation.}
+\label{fig:permutation}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\linewidth]{figures/fig3_correlation.png}
+\caption{Pearson correlation heatmap among the top 8 features ranked by mean $|$SHAP$|$. Warm red~=~positive correlation; cool blue~=~negative.}
+\label{fig:correlation}
+\end{figure}
+
+
+(Figure~\ref{fig:pdpice}, PDP panel) reveals that A11 and A8 both exert positive but distinctly nonlinear effects on predicted approval probability. A11 exhibits a pronounced threshold pattern: small increases at low values produce a sharp rise in predicted probability, after which the effect saturates quickly. This suggests that A11 primarily acts as a gating variable. Once a minimal level is reached, additional increases provide little incremental information to the model. In contrast, A8 shows a smoother, monotonic increase without a clear saturation point, indicating a more continuously informative role across its range.
+
+
+The ICE curves for both features display substantial dispersion, highlighting significant heterogeneity in their effects across applicants. This divergence implies that the marginal impact of A11 and A8 is context-dependent, likely driven by interactions with other features. In particular, the same feature value can correspond to materially different prediction changes depending on the broader feature profile, which would be obscured by the population-average PDP alone.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/fig4_pdp_ice.png}
+\caption{PDP~+~ICE plots for A11, A8, A15, and A14. The dashed line shows the population-average partial dependence. Thin lines show individual conditional expectations for a random subsample of 200 observations.}
+\label{fig:pdpice}
+\end{figure}
+
+The fold-level sign stability matrix (Figure~\ref{fig:signmatrix}) shows A10 at 8/10 positive folds, consistent with its beeswarm profile. A11 registers only 2/10 positive folds. For features with highly left skewed distributions, the fold-level mean SHAP is dominated by the large mass of near-zero observations, pulling the mean negative even when the feature produces positive contributions for elevated-value applicants. The beeswarm on the full model is the more reliable diagnostic for A11's directional effect. This limitation is discussed in Section~\ref{sec:skew}.
+
+
+
+\subsection{Orthogonal Signals: A15 and A14}
+
+A15 and A14 are not part of the A9 correlated cluster. Their correlations with A9 are 0.06 and 0.08 respectively (Figure~\ref{fig:correlation}). They carry information that is independent of the primary signal and its associated features.
+
+A15 produces near-zero SHAP values for most applicants. For a small subset at the extreme upper tail of the A15 distribution, it generates a meaningfully positive contribution to predicted approval probability (Figures~\ref{fig:beeswarm} and~\ref{fig:pdpice}). Below that threshold, A15 is effectively inert. The fold-level sign matrix places A15 at 3/10 positive folds, again reflecting the skew limitation described in Section~\ref{sec:cluster}. The beeswarm and PDP both confirm the tail-positive structure independently.
+
+A14 is the weakest feature among the top signals. Its PDP is nearly flat across its full range (Figure~\ref{fig:pdpice}), and its ICE curves cross heavily, indicating that the marginal effect reverses direction across individuals. The fold-level sign matrix places A14 at 4/10 positive folds. No stable directional interpretation for A14 is consistent across the diagnostics used in this analysis.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/fig5_sign_matrix.png}
+\caption{SHAP direction stability matrix. Each cell shows the sign of the mean SHAP value for that feature in that fold: `+' (green) pushes toward approval; `-' (red) pushes toward denial.}
+\label{fig:signmatrix}
+\end{figure}
+
+\subsection{Low-Importance and Direction-Unstable Features}
+
+The remaining features~--- A3, A5, A6, A2, A1, A4, A7, A12, and A13~--- contribute near-zero SHAP values in the full model and show no consistent directional pattern in the sign stability matrix (Figure~\ref{fig:signmatrix}). A5 and A8 are the most directionally unstable, each splitting evenly across positive and negative fold means. A3 and A6 show a weak negative lean at 3/10 and 4/10 positive folds respectively, but their SHAP magnitudes are too small to support reliable conclusions.
+
+A1 and A7 warrant separate note. Based on the structure of the UCI Credit Approval dataset and prior literature on credit application features, A1 is commonly interpreted as a binary sex or gender indicator, and A7 as an indicator related to ethnicity or national origin. Both are protected characteristics under major fair lending frameworks. Both rank at the bottom of the SHAP importance ranking and contribute effectively zero to model predictions. This is addressed in Section~\ref{sec:fairlending}.
+
+
+
+\subsection{Fair Lending Analysis}
+\label{sec:fairlending}
+
+\subsubsection*{Disparate treatment}
+
+Disparate treatment occurs when a model uses protected characteristics as direct inputs to reach differential outcomes. Under the Equal Credit Opportunity Act (ECOA) and Regulation~B, creditors are prohibited from discriminating on the basis of race, color, religion, national origin, sex, marital status, or age \citep{cfpb2022}. In this model, A1 and A7 are present as features but contribute near-zero SHAP values. The model does not materially rely on these characteristics to reach approval decisions. This is a positive finding from a disparate treatment standpoint. It does not, however, exhaust the fair lending analysis.
+
+\subsubsection*{Disparate impact}
+
+Disparate impact concerns arise when a facially neutral feature produces outcomes that disproportionately disadvantage a protected class. A15's tail effect is the primary candidate for this concern. The feature is effectively inert for most applicants and provides a meaningful approval boost only for those at the extreme upper end of its distribution. If A15 proxies wealth, income, or accumulated assets, the structural effect is to selectively reward applicants with exceptional financial resources. In most credit markets, access to exceptional financial resources correlates with race, national origin, and other protected characteristics due to historical and structural factors. This does not make A15 an impermissible feature, but any deployment of a model with this structure would require a formal disparate impact analysis and, where adverse impact is found, a documented search for less discriminatory alternatives \citep{dobbie2024, asurity2024}.
+
+\subsubsection*{Compliance barrier under feature anonymization}
+
+A lending institution cannot deploy a model built on anonymous features in any major jurisdiction. Under ECOA and Regulation~B, creditors must provide applicants with specific reasons for adverse action decisions. \citet{cfpb2022} explicitly addresses this requirement in the context of complex machine learning models, affirming that the use of algorithmic models does not exempt creditors from the obligation to provide specific and accurate adverse action notices. A model whose features cannot be identified or described in human-readable terms cannot satisfy this requirement.
+
+\subsubsection*{Regulatory exposure across jurisdictions}
+
+Regulatory constraints on algorithmic credit scoring extend beyond the United States. Table~\ref{tab:regulatory} summarizes the compliance status of a model of this type across the three most relevant regulatory frameworks.
+
+\begin{table}[H]
+\centering
+\caption{Regulatory exposure by jurisdiction.}
+\label{tab:regulatory}
+\setlength{\arrayrulewidth}{0.4pt}
+\begin{tabularx}{\textwidth}{llXl}
+\toprule
+\rowhead
+\color{white}\textbf{Jurisdiction} &
+\color{white}\textbf{Framework} &
+\color{white}\textbf{Key Requirement} &
+\color{white}\textbf{Status} \\
+\midrule
+United States & ECOA / Regulation B & Specific adverse action reasons required & Non-compliant \\
+\rowalt
+United States & FCRA & Accurate disclosure of factors affecting credit decisions & Non-compliant \\
+European Union & EU AI Act, Annex III \S5(b) & Risk management, technical documentation, human oversight, EU database registration (from Aug 2026) & Non-compliant \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+This points to a broader structural problem in the deployment of algorithmic credit systems. As these systems become more capable and more widely adopted, the gap between what a model can predict and what a regulator can audit is widening. \citet{kozodoi2022} provide a framework for formally testing and optimizing fairness in credit scoring models, demonstrating that accuracy and fairness are not necessarily in tension and that the tradeoff between them can be explicitly managed. \citet{dumitrescu2022} benchmark twelve bias mitigation methods across multiple credit datasets, finding substantial variation in outcomes across methods and datasets. Both bodies of work reach the same conclusion: fair lending compliance in algorithmic systems requires proactive formal analysis. Without feature identity, that analysis cannot begin.
 
 % ──────────────────────────────────────────────────────────────────────────────
 \section{Limitations and Risks}
