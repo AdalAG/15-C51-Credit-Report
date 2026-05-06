@@ -173,6 +173,8 @@ The central findings are as follows. A9 is the dominant predictor, with a mean a
 
 The fair lending analysis identifies two concerns independent of model intent. A15's tail effect raises disparate impact questions if the feature proxies wealth or income. Feature anonymization creates a compliance barrier that would prevent deployment under the Equal Credit Opportunity Act, the Fair Credit Reporting Act, and the EU AI Act's high-risk AI provisions, which classify credit scoring systems as high-risk from August 2026 (Table~\ref{tab:regulatory}).
 
+\newpage
+
 % ──────────────────────────────────────────────────────────────────────────────
 \section{Context and Scope}
 % ──────────────────────────────────────────────────────────────────────────────
@@ -194,6 +196,8 @@ The anonymization is a defining constraint of this analysis. Any interpretive cl
 This report does not aim to build a production-ready credit scoring system. The dataset is too small, the features are anonymous, and the institutional context is unknown. The objective is narrower: to use a stable, well-validated machine learning model as an analytical instrument for understanding what patterns drive credit approval decisions in this dataset, and what those patterns imply for fairness, auditability, and the broader deployment of algorithmic decision systems in lending.
 
 The question of how AI interacts with credit ecosystems is not primarily a question about model accuracy. It is a question about which features carry predictive signal, whether that signal is stable across data partitions, whether it is consistent with the principles of fair lending, and whether the decision process it encodes can be explained to the applicants it affects and the regulators who oversee it. This analysis addresses each of these questions in turn, within the limits imposed by the data.
+
+\newpage
 
 % ──────────────────────────────────────────────────────────────────────────────
 \section{Data and Methodology}
@@ -290,6 +294,8 @@ Four complementary methods are applied. Each answers a distinct analytical quest
 \textbf{Partial dependence plots and individual conditional expectation curves (PDP and ICE)} are computed on the final model. The PDP shows the average marginal effect of each continuous feature on predicted approval probability. ICE curves show the same relationship at the individual level, exposing heterogeneity that the average obscures \citep{goldstein2015, molnar2022}.
 
 
+\newpage
+
 % ──────────────────────────────────────────────────────────────────────────────
 \section{Key Findings}
 % ──────────────────────────────────────────────────────────────────────────────
@@ -333,14 +339,15 @@ A3  & 8 & 0.0199 & Low      & ---  & 3/10 \\
 
 The structure of A9's effect is binary rather than continuous. The SHAP beeswarm plot (Figure~\ref{fig:beeswarm}) shows two distinct clusters. Low values of A9 produce large negative SHAP contributions, pushing predicted approval probability downward. High values produce large positive contributions, pushing it upward. There is no gradual middle range. Applicants with low A9 values face a strong prior against approval that the remaining features cannot easily overcome.
 
-This directional effect is stable across data partitions. A9 produces a positive fold-mean SHAP value in 8 of 10 cross-validation folds (Figure~\ref{fig:signmatrix}). The two dissenting folds reflect sampling variation. The bimodal structure visible in the beeswarm is consistent across all folds individually.
-
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.80\linewidth]{figures/fig1_beeswarm.png}
 \caption{SHAP beeswarm plot for the final model trained on all 653 observations. Features are sorted by mean $|$SHAP$|$ (descending). Color encodes raw feature value (red~=~high, blue~=~low). Horizontal position encodes effect on approval probability.}
 \label{fig:beeswarm}
 \end{figure}
+
+This directional effect is stable across data partitions. A9 produces a positive fold-mean SHAP value in 8 of 10 cross-validation folds (Figure~\ref{fig:signmatrix}). The two dissenting folds reflect sampling variation. The bimodal structure visible in the beeswarm is consistent across all folds individually.
+
 
 \subsection{Correlated Features: A10, A11, and A8}
 \label{sec:cluster}
@@ -362,7 +369,7 @@ A10, A11, and A8 occupy the top tier of SHAP magnitude after A9 and rank second 
 \end{figure}
 
 
-(Figure~\ref{fig:pdpice}, PDP panel) reveals that A11 and A8 both exert positive but distinctly nonlinear effects on predicted approval probability. A11 exhibits a pronounced threshold pattern: small increases at low values produce a sharp rise in predicted probability, after which the effect saturates quickly. This suggests that A11 primarily acts as a gating variable. Once a minimal level is reached, additional increases provide little incremental information to the model. In contrast, A8 shows a smoother, monotonic increase without a clear saturation point, indicating a more continuously informative role across its range.
+Figure~\ref{fig:pdpice} reveals that A11 and A8 both exert positive but distinctly nonlinear effects on predicted approval probability. A11 exhibits a pronounced threshold pattern: small increases at low values produce a sharp rise in predicted probability, after which the effect saturates quickly. This suggests that A11 primarily acts as a gating variable. Once a minimal level is reached, additional increases provide little incremental information to the model. In contrast, A8 shows a smoother, monotonic increase without a clear saturation point, indicating a more continuously informative role across its range.
 
 
 The ICE curves for both features display substantial dispersion, highlighting significant heterogeneity in their effects across applicants. This divergence implies that the marginal impact of A11 and A8 is context-dependent, likely driven by interactions with other features. In particular, the same feature value can correspond to materially different prediction changes depending on the broader feature profile, which would be obscured by the population-average PDP alone.
@@ -376,6 +383,12 @@ The ICE curves for both features display substantial dispersion, highlighting si
 
 The fold-level sign stability matrix (Figure~\ref{fig:signmatrix}) shows A10 at 8/10 positive folds, consistent with its beeswarm profile. A11 registers only 2/10 positive folds. For features with highly left skewed distributions, the fold-level mean SHAP is dominated by the large mass of near-zero observations, pulling the mean negative even when the feature produces positive contributions for elevated-value applicants. The beeswarm on the full model is the more reliable diagnostic for A11's directional effect. This limitation is discussed in Section~\ref{sec:skew}.
 
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/fig5_sign_matrix.png}
+\caption{SHAP direction stability matrix. Each cell shows the sign of the mean SHAP value for that feature in that fold: `+' (green) pushes toward approval; `-' (red) pushes toward denial.}
+\label{fig:signmatrix}
+\end{figure}
 
 
 \subsection{Orthogonal Signals: A15 and A14}
@@ -386,16 +399,10 @@ A15 produces near-zero SHAP values for most applicants. For a small subset at th
 
 A14 is the weakest feature among the top signals. Its PDP is nearly flat across its full range (Figure~\ref{fig:pdpice}), and its ICE curves cross heavily, indicating that the marginal effect reverses direction across individuals. The fold-level sign matrix places A14 at 4/10 positive folds. No stable directional interpretation for A14 is consistent across the diagnostics used in this analysis.
 
-\begin{figure}[H]
-\centering
-\includegraphics[width=\linewidth]{figures/fig5_sign_matrix.png}
-\caption{SHAP direction stability matrix. Each cell shows the sign of the mean SHAP value for that feature in that fold: `+' (green) pushes toward approval; `-' (red) pushes toward denial.}
-\label{fig:signmatrix}
-\end{figure}
 
 \subsection{Low-Importance and Direction-Unstable Features}
 
-The remaining features~--- A3, A5, A6, A2, A1, A4, A7, A12, and A13~--- contribute near-zero SHAP values in the full model and show no consistent directional pattern in the sign stability matrix (Figure~\ref{fig:signmatrix}). A5 and A8 are the most directionally unstable, each splitting evenly across positive and negative fold means. A3 and A6 show a weak negative lean at 3/10 and 4/10 positive folds respectively, but their SHAP magnitudes are too small to support reliable conclusions.
+The remaining features (A3, A5, A6, A2, A1, A4, A7, A12, and A13) contribute near-zero SHAP values in the full model and show no consistent directional pattern in the sign stability matrix (Figure~\ref{fig:signmatrix}). A5 and A8 are the most directionally unstable, each splitting evenly across positive and negative fold means. A3 and A6 show a weak negative lean at 3/10 and 4/10 positive folds respectively, but their SHAP magnitudes are too small to support reliable conclusions.
 
 A1 and A7 warrant separate note. Based on the structure of the UCI Credit Approval dataset and prior literature on credit application features, A1 is commonly interpreted as a binary sex or gender indicator, and A7 as an indicator related to ethnicity or national origin. Both are protected characteristics under major fair lending frameworks. Both rank at the bottom of the SHAP importance ranking and contribute effectively zero to model predictions. This is addressed in Section~\ref{sec:fairlending}.
 
@@ -443,6 +450,8 @@ European Union & EU AI Act, Annex III \S5(b) & Risk management, technical docume
 
 This points to a broader structural problem in the deployment of algorithmic credit systems. As these systems become more capable and more widely adopted, the gap between what a model can predict and what a regulator can audit is widening. \citet{kozodoi2022} provide a framework for formally testing and optimizing fairness in credit scoring models, demonstrating that accuracy and fairness are not necessarily in tension and that the tradeoff between them can be explicitly managed. \citet{dumitrescu2022} benchmark twelve bias mitigation methods across multiple credit datasets, finding substantial variation in outcomes across methods and datasets. Both bodies of work reach the same conclusion: fair lending compliance in algorithmic systems requires proactive formal analysis. Without feature identity, that analysis cannot begin.
 
+\newpage
+
 % ──────────────────────────────────────────────────────────────────────────────
 \section{Limitations and Risks}
 \label{sec:limitations}
@@ -473,6 +482,8 @@ The dataset represents a single cross-section with no temporal dimension. Credit
 
 The fold-level SHAP sign test has a known limitation for features with highly skewed distributions. When the bulk of observations cluster near zero, the mean SHAP value across a held-out fold is dominated by that mass, which can produce a negative fold mean even when the feature has a clearly positive effect for the elevated-value subgroup. A11 and A15 are both affected by this. The beeswarm plot on the full model is the more reliable diagnostic for directional interpretation in these cases, and the sign stability matrix in Section~3.4 should be read with this in mind.
 
+\newpage
+
 % ──────────────────────────────────────────────────────────────────────────────
 \section{Conclusion and Future Work}
 % ──────────────────────────────────────────────────────────────────────────────
@@ -499,6 +510,8 @@ Formal fairness auditing is a natural extension of Section~\ref{sec:fairlending}
 
 Replication on a non-anonymized dataset would test whether the cluster structure identified here~--- a dominant binary gate with a correlated secondary cluster and one orthogonal tail signal~--- is a property of this particular dataset or a more general pattern in consumer credit data. That question has implications beyond this analysis.
 
+\newpage
+
 % ──────────────────────────────────────────────────────────────────────────────
 \section{AI and Data Use Disclosure}
 % ──────────────────────────────────────────────────────────────────────────────
@@ -508,9 +521,20 @@ Replication on a non-anonymized dataset would test whether the cluster structure
 This analysis uses the UCI Credit Approval Dataset (\texttt{crx.data} / \texttt{credit\_approval.csv}), 690 rows $\times$ 16 columns, contributed by \citet{quinlan1987} to the UCI Machine Learning Repository.
 
 \subsection{AI Tool Usage}
+Analysis notebook and related data processing was performed with the help of Claude Code. The AI was used for data cleaning, creating a data pipeline, debugging. 
 
-This report was developed with the assistance of Perplexity AI (powered by Claude Sonnet 4.6). The AI was used for report drafting, structural planning, internal consistency review, and interpretability framing. All analytical conclusions are grounded in the notebook outputs produced by the authors. All figures are produced directly by the analysis pipeline. The full prompt history and conversation log are available upon request in accordance with course requirements.
+This written report was developed with the assistance of Perplexity AI (powered by Claude Sonnet 4.6). The AI was used for report drafting, structural planning, internal consistency review, and interpretability framing. 
+All analytical conclusions are grounded in the notebook outputs produced by the authors. All figures are produced directly by the analysis pipeline.
 
+The full prompt histories, conversation logs, and pipeline used 
+are available in the repository:
+\begin{itemize}
+  \item \href{https://github.com/AdalAG/15-C51-Credit-Report/blob/main/ai\_logs/claude\_conversation.rtf}{Claude -- Conversation Log}
+  \item \href{https://github.com/AdalAG/15-C51-Credit-Report/blob/main/ai\_logs/Perplexity\_conversation.md}{Perplexity -- Conversation Log}
+  \item \href{https://github.com/AdalAG/15-C51-Credit-Report/blob/main/Claude\_Pipeline.md}{Claude generated pipeline -- Conversation Log}
+  \item \href{https://github.com/AdalAG/15-C51-Credit-Report/blob/main/ai\_logs/other_prompts.txt}{ChatGPT -- Prompts}
+  
+\end{itemize}
 % ──────────────────────────────────────────────────────────────────────────────
 \bibliographystyle{apalike}
 \bibliography{references}
