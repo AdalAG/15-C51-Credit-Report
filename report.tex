@@ -92,6 +92,7 @@
 
 % ── Bibliography ──────────────────────────────────────────────────────────────
 \usepackage[numbers]{natbib}
+\usepackage{xurl}
 
 % ── Misc ──────────────────────────────────────────────────────────────────────
 \usepackage{setspace}
@@ -242,7 +243,7 @@ Categorical features are encoded using scikit-learn's \texttt{LabelEncoder}, whi
 
 The target variable A16 is encoded as 1 (approved) and 0 (denied). Continuous features are retained in their original scale. No normalization is applied, as tree-based models are scale-invariant.
 
-\subsection{Model Selection and Training}
+\subsection{Model Selection, Training, and Performance}
 
 A Random Forest classifier is used as the analytical instrument. Three properties make it appropriate for this task. It handles mixed feature types without additional transformation. It produces well-calibrated probability estimates over held-out data, making cross-validated AUC a meaningful performance metric. It is also fully compatible with SHAP's \texttt{TreeExplainer}, which enables exact rather than approximate Shapley value computation.
 
@@ -276,8 +277,6 @@ Std CV AUC (10-fold)         & 0.0282 \\
 \bottomrule
 \end{tabular}
 \end{table}
-
-\subsection{Model Performance}
 
 The selected model achieves a mean cross-validated AUC of 0.9366 with a standard deviation of 0.0282. This is strong discriminative performance for a dataset of this size. The goal of this analysis is not predictive accuracy for deployment. The model serves as an interpretability instrument, and this performance level is sufficient to justify that use.
 
@@ -339,14 +338,14 @@ A3  & 8 & 0.0199 & Low      & ---  & 3/10 \\
 
 The structure of A9's effect is binary rather than continuous. The SHAP beeswarm plot (Figure~\ref{fig:beeswarm}) shows two distinct clusters. Low values of A9 produce large negative SHAP contributions, pushing predicted approval probability downward. High values produce large positive contributions, pushing it upward. There is no gradual middle range. Applicants with low A9 values face a strong prior against approval that the remaining features cannot easily overcome.
 
+This directional effect is stable across data partitions. A9 produces a positive fold-mean SHAP value in 8 of 10 cross-validation folds (Figure~\ref{fig:signmatrix}). The two dissenting folds reflect sampling variation. The bimodal structure visible in the beeswarm is consistent across all folds individually.
+
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.80\linewidth]{figures/fig1_beeswarm.png}
+\includegraphics[width=0.75\linewidth]{figures/fig1_beeswarm.png}
 \caption{SHAP beeswarm plot for the final model trained on all 653 observations. Features are sorted by mean $|$SHAP$|$ (descending). Color encodes raw feature value (red~=~high, blue~=~low). Horizontal position encodes effect on approval probability.}
 \label{fig:beeswarm}
 \end{figure}
-
-This directional effect is stable across data partitions. A9 produces a positive fold-mean SHAP value in 8 of 10 cross-validation folds (Figure~\ref{fig:signmatrix}). The two dissenting folds reflect sampling variation. The bimodal structure visible in the beeswarm is consistent across all folds individually.
 
 
 \subsection{Correlated Features: A10, A11, and A8}
@@ -376,7 +375,7 @@ The ICE curves for both features display substantial dispersion, highlighting si
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\linewidth]{figures/fig4_pdp_ice.png}
+\includegraphics[width=0.95]{figures/fig4_pdp_ice.png}
 \caption{PDP~+~ICE plots for A11, A8, A15, and A14. The dashed line shows the population-average partial dependence. Thin lines show individual conditional expectations for a random subsample of 200 observations.}
 \label{fig:pdpice}
 \end{figure}
